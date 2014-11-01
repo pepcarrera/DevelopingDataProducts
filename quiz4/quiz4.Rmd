@@ -1,0 +1,127 @@
+---
+title: "Quiz4"
+author: "Pep Carrera"
+date: "Saturday, November 01, 2014"
+output: html_document
+---
+Q1
+
+Load the vowel.train and vowel.test data sets:
+library(ElemStatLearn)
+data(vowel.train)
+data(vowel.test) 
+Set the variable y to be a factor variable in both the training and test set. Then set the seed to 33833. Fit (1) a random forest predictor relating the factor variable y to the remaining variables and (2) a boosted predictor using the "gbm" method. Fit these both with the train() command in the caret package. 
+
+What are the accuracies for the two approaches on the test data set? What is the accuracy among the test set samples where the two methods agree?
+
+```{r}
+library(ElemStatLearn)
+data(vowel.train)
+data(vowel.test) 
+vowel.train$y <- factor(vowel.train$y)
+vowel.test$y <- factor(vowel.test$y)
+library(caret)
+set.seed(33833)
+fitrf <- train(y~., data=vowel.train, method = "rf")
+fitgbm <- train(y~., data=vowel.train, method = "gbm", verbose=FALSE)
+predrf <- predict(fitrf, vowel.test)
+predgbm <- predict(fitgbm, vowel.test)
+res <- data.frame(vowel.test$y, predrf, predgbm)
+results.matrix.rf <- confusionMatrix(res$vowel.test.y, res$predrf)
+results.matrix.gbm <- confusionMatrix(res$vowel.test.y, res$predgbm)
+results.matrix.comb <- confusionMatrix(res$predrf, res$predgbm)
+```
+
+Q2
+
+Load the Alzheimer's data using the following commands
+library(caret)
+library(gbm)
+set.seed(3433)
+library(AppliedPredictiveModeling)
+data(AlzheimerDisease)
+adData = data.frame(diagnosis,predictors)
+inTrain = createDataPartition(adData$diagnosis, p = 3/4)[[1]]
+training = adData[ inTrain,]
+testing = adData[-inTrain,]
+Set the seed to 62433 and predict diagnosis with all the other variables using a random forest ("rf"), boosted trees ("gbm") and linear discriminant analysis ("lda") model. Stack the predictions together using random forests ("rf"). What is the resulting accuracy on the test set? Is it better or worse than each of the individual predictions?
+
+```{r}
+library(caret)
+library(gbm)
+set.seed(3433)
+library(AppliedPredictiveModeling)
+data(AlzheimerDisease)
+adData = data.frame(diagnosis,predictors)
+inTrain = createDataPartition(adData$diagnosis, p = 3/4)[[1]]
+training = adData[ inTrain,]
+testing = adData[-inTrain,]
+set.seed(62433)
+
+fitrf <- train(diagnosis~., data=training, method = "rf")
+fitgbm <- train(diagnosis~., data=training, method = "gbm", verbose=FALSE)
+fitlda <- train(diagnosis~., data=training, method = "lda")
+predrf <- predict(fitrf, testing)
+predgbm <- predict(fitgbm, testing)
+predlda <- predict(fitlda, testing)
+
+predDF <- data.frame(predrf,predgbm, predlda,diagnosis=testing$diagnosis)
+combModFit <- train(diagnosis ~.,method="rf",data=predDF)
+combPred <- predict(combModFit,predDF)
+
+res <- data.frame(testing$diagnosis, predrf, predgbm, predlda, combPred)
+results.matrix.rf <- confusionMatrix(res$testing.diagnosis, res$predrf)
+#.7683
+results.matrix.gbm <- confusionMatrix(res$testing.diagnosis, res$predgbm)
+#.7927
+results.matrix.lda <- confusionMatrix(res$testing.diagnosis, res$predlda)
+#.7683
+results.matrix.comb <- confusionMatrix(res$testing.diagnosis, res$combPred)
+#.8049
+```
+
+Question 3
+Load the concrete data with the commands:
+set.seed(3523)
+library(AppliedPredictiveModeling)
+data(concrete)
+inTrain = createDataPartition(concrete$CompressiveStrength, p = 3/4)[[1]]
+training = concrete[ inTrain,]
+testing = concrete[-inTrain,]
+Set the seed to 233 and fit a lasso model to predict Compressive Strength. Which variable is the last coefficient to be set to zero as the penalty increases? (Hint: it may be useful to look up ?plot.enet).
+
+```{r}
+set.seed(3523)
+library(AppliedPredictiveModeling)
+data(concrete)
+inTrain = createDataPartition(concrete$CompressiveStrength, p = 3/4)[[1]]
+training = concrete[ inTrain,]
+testing = concrete[-inTrain,]
+set.seed(233)
+fitlasso <- train(CompressiveStrength~., data=training, method = "lasso")
+plot.enet(fitlasso$finalModel, xvar = "penalty")
+```
+
+
+Q4
+
+```{r}
+file <- "https://d396qusza40orc.cloudfront.net/predmachlearn/gaData.csv"
+download.file(file, "gaData.csv")
+```
+
+Q5
+
+```{r}
+set.seed(3523)
+library(AppliedPredictiveModeling)
+data(concrete)
+inTrain = createDataPartition(concrete$CompressiveStrength, p = 3/4)[[1]]
+training = concrete[ inTrain,]
+testing = concrete[-inTrain,]
+set.seed(325)
+library(e1071)
+fit <- train(CompressiveStrength ~ ., data = training, method = "svmRadial")
+prediction <- predict(fit, testing)
+accuracy(prediction, testing$CompressiveStrength)
+
